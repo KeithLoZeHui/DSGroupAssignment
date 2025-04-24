@@ -57,6 +57,25 @@ struct WordFreq {
     }
 };
 
+// Helper function to process a single word
+void processWord(String& word, LinkedList<WordFreq>& wordFrequencies) {
+    word.toLower();
+    bool found = false;
+    for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
+        if (it->word == word) {
+            it->frequency++;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        WordFreq wf;
+        wf.word = word;
+        wf.frequency = 1;
+        wordFrequencies.insert(wf);
+    }
+}
+
 // Helper function to safely convert string to double
 double safeStod(const String& str) {
     try {
@@ -142,30 +161,11 @@ void processReview(const StringArray& parts, LinkedList<Review>& reviews,
     }
 }
 
-// Helper function to process a single word
-void processWord(String& word, LinkedList<WordFreq>& wordFrequencies) {
-    word.toLower();
-    bool found = false;
-    for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
-        if (it->word == word) {
-            it->frequency++;
-            found = true;
-            break;
-        }
-    }
-    if (!found) {
-        WordFreq wf;
-        wf.word = word;
-        wf.frequency = 1;
-        wordFrequencies.insert(wf);
-    }
-}
-
 // Helper function to measure sorting time
 template<typename T>
-long long measureSortTime(void (LinkedList<T>::*sortFunc)(), LinkedList<T>& list) {
+long long measureSortTime(void (*sortFunc)(LinkedList<T>&), LinkedList<T>& list) {
     auto start = std::chrono::high_resolution_clock::now();
-    (list.*sortFunc)();
+    sortFunc(list);
     auto end = std::chrono::high_resolution_clock::now();
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 }
@@ -208,22 +208,16 @@ int main() {
         }
     }
 
-    // 1. Sort transactions by date using different algorithms and compare
+    // 1. Sort transactions by date using quick sort
     std::cout << "\n1. Transaction Analysis:" << std::endl;
     std::cout << "Total number of transactions: " << totalTransactions << std::endl;
     std::cout << "Total number of reviews: " << reviews.getSize() << std::endl;
 
-    LinkedList<Transaction> transactionsHeap = transactions;
-    LinkedList<Transaction> transactionsJump = transactions;
+    LinkedList<Transaction> transactionsCopy = transactions;
+    auto quickSortTime = measureSortTime(SortingAlgorithms<Transaction>::quickSort, transactionsCopy);
 
-    auto mergeSortTime = measureSortTime(&LinkedList<Transaction>::mergeSort, transactions);
-    auto heapSortTime = measureSortTime(&LinkedList<Transaction>::heapSort, transactionsHeap);
-    auto jumpSortTime = measureSortTime(&LinkedList<Transaction>::jumpSort, transactionsJump);
-
-    std::cout << "\nSorting Performance Comparison:" << std::endl;
-    std::cout << "Merge Sort time: " << mergeSortTime << " milliseconds" << std::endl;
-    std::cout << "Heap Sort time: " << heapSortTime << " milliseconds" << std::endl;
-    std::cout << "Jump Sort time: " << jumpSortTime << " milliseconds" << std::endl;
+    std::cout << "\nSorting Performance:" << std::endl;
+    std::cout << "Quick Sort time: " << quickSortTime << " milliseconds" << std::endl;
 
     // 2. Calculate percentage of Electronics purchases made with Credit Card
     double percentage = (totalElectronics > 0) ? 
@@ -236,7 +230,7 @@ int main() {
               << std::fixed << std::setprecision(2) << percentage << "%" << std::endl;
 
     // 3. Sort and display most frequent words in 1-star reviews
-    wordFrequencies.mergeSort();
+    SortingAlgorithms<WordFreq>::quickSort(wordFrequencies);
     
     std::cout << "\n3. Most Frequent Words in 1-Star Reviews:" << std::endl;
     int count = 0;
@@ -247,5 +241,7 @@ int main() {
         }
     }
 
+    std::cout << "\nPress Enter to exit..."; 
+    std::cin.get();
     return 0;
 } 

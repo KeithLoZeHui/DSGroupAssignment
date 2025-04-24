@@ -21,6 +21,13 @@ public:
         strcpy(data, str);
     }
 
+    String(const char* str, size_t len) {
+        length = len;
+        data = new char[length + 1];
+        strncpy(data, str, length);
+        data[length] = '\0';
+    }
+
     String(const String& other) {
         length = other.length;
         data = new char[length + 1];
