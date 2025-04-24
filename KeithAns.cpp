@@ -7,6 +7,7 @@
 #include <fstream>
 #include <chrono>
 #include <iomanip>
+#include <stdexcept>
 
 // Structure to store transaction data
 struct Transaction {
@@ -20,6 +21,10 @@ struct Transaction {
     bool operator>(const Transaction& other) const {
         return date > other.date;
     }
+
+    bool operator<(const Transaction& other) const {
+        return date < other.date;
+    }
 };
 
 // Structure to store review data
@@ -32,6 +37,10 @@ struct Review {
     bool operator>(const Review& other) const {
         return rating > other.rating;
     }
+
+    bool operator<(const Review& other) const {
+        return rating < other.rating;
+    }
 };
 
 // Structure for word frequency counting
@@ -42,7 +51,37 @@ struct WordFreq {
     bool operator>(const WordFreq& other) const {
         return frequency > other.frequency;
     }
+
+    bool operator<(const WordFreq& other) const {
+        return frequency < other.frequency;
+    }
 };
+
+// Helper function to safely convert string to double
+double safeStod(const String& str) {
+    try {
+        return std::stod(str.c_str());
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "Error: Invalid number format in transaction price: " << str << std::endl;
+        return 0.0;
+    } catch (const std::out_of_range& e) {
+        std::cerr << "Error: Number out of range in transaction price: " << str << std::endl;
+        return 0.0;
+    }
+}
+
+// Helper function to safely convert string to int
+int safeStoi(const String& str) {
+    try {
+        return std::stoi(str.c_str());
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "Error: Invalid number format in review rating: " << str << std::endl;
+        return 0;
+    } catch (const std::out_of_range& e) {
+        std::cerr << "Error: Number out of range in review rating: " << str << std::endl;
+        return 0;
+    }
+}
 
 // Helper function to process transactions
 void processTransaction(const StringArray& parts, LinkedList<Transaction>& transactions,
@@ -51,7 +90,7 @@ void processTransaction(const StringArray& parts, LinkedList<Transaction>& trans
         Transaction t;
         t.customerId = parts[0];
         t.productId = parts[1];
-        t.price = std::stod(parts[2].c_str());
+        t.price = safeStod(parts[2]);
         t.date = parts[3];
         t.category = parts[4];
         t.paymentMethod = parts[5];
@@ -75,7 +114,7 @@ void processReview(const StringArray& parts, LinkedList<Review>& reviews,
         Review r;
         r.productId = parts[0];
         r.customerId = parts[1];
-        r.rating = std::stoi(parts[2].c_str());
+        r.rating = safeStoi(parts[2]);
         r.reviewText = parts[3];
         
         reviews.insert(r);
@@ -147,7 +186,7 @@ int main() {
     }
     readCSVLine(transFile); // Skip header
     
-    while (!transFile.eof()) {
+    while (transFile.good()) {
         auto parts = readCSVLine(transFile);
         if (parts.getSize() > 0) {
             processTransaction(parts, transactions, totalTransactions, electronicsCredit, totalElectronics);
@@ -162,7 +201,7 @@ int main() {
     }
     readCSVLine(reviewFile); // Skip header
     
-    while (!reviewFile.eof()) {
+    while (reviewFile.good()) {
         auto parts = readCSVLine(reviewFile);
         if (parts.getSize() > 0) {
             processReview(parts, reviews, wordFrequencies);

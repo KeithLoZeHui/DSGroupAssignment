@@ -2,24 +2,34 @@
 #define ARRAY_HPP
 
 #include <stdexcept>
+#include <memory>
 
 template<typename T>
 class Array {
 private:
-    T* data;
+    std::unique_ptr<T[]> data;
     int size;
     int capacity;
 
+    void resize(int newCapacity) {
+        std::unique_ptr<T[]> newData = std::make_unique<T[]>(newCapacity);
+        for (int i = 0; i < size; i++) {
+            newData[i] = std::move(data[i]);
+        }
+        data = std::move(newData);
+        capacity = newCapacity;
+    }
+
 public:
     // Constructors and destructor
-    Array(int initialCapacity = 10) : data(new T[initialCapacity]), size(0), capacity(initialCapacity) {}
+    Array(int initialCapacity = 10) : data(std::make_unique<T[]>(initialCapacity)), size(0), capacity(initialCapacity) {}
     
     ~Array() {
-        delete[] data;
+        // Destructor is implicitly called when std::unique_ptr goes out of scope
     }
 
     // Copy constructor
-    Array(const Array& other) : data(new T[other.capacity]), size(other.size), capacity(other.capacity) {
+    Array(const Array& other) : data(std::make_unique<T[]>(other.capacity)), size(other.size), capacity(other.capacity) {
         for (int i = 0; i < size; i++) {
             data[i] = other.data[i];
         }
@@ -28,13 +38,13 @@ public:
     // Assignment operator
     Array& operator=(const Array& other) {
         if (this != &other) {
-            delete[] data;
-            capacity = other.capacity;
-            size = other.size;
-            data = new T[capacity];
-            for (int i = 0; i < size; i++) {
-                data[i] = other.data[i];
+            std::unique_ptr<T[]> newData = std::make_unique<T[]>(other.capacity);
+            for (int i = 0; i < other.size; i++) {
+                newData[i] = other.data[i];
             }
+            data = std::move(newData);
+            size = other.size;
+            capacity = other.capacity;
         }
         return *this;
     }
@@ -61,13 +71,7 @@ public:
     // Modifiers
     void push_back(const T& value) {
         if (size == capacity) {
-            capacity *= 2;
-            T* newData = new T[capacity];
-            for (int i = 0; i < size; i++) {
-                newData[i] = data[i];
-            }
-            delete[] data;
-            data = newData;
+            resize(capacity * 2);
         }
         data[size++] = value;
     }
