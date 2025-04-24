@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <cctype>
 
 class String {
 private:
@@ -101,6 +102,164 @@ public:
         str.data = new char[str.length + 1];
         strcpy(str.data, buffer);
         return is;
+    }
+};
+
+// Custom string implementation using linked list
+struct CharNode {
+    char data;
+    CharNode* next;
+    CharNode(char c) : data(c), next(nullptr) {}
+};
+
+class MyString {
+    friend MyString cleanWord(const MyString& word);
+    friend void processReviewText(const MyString& text);
+    CharNode* head;
+    
+    public:
+    MyString() : head(nullptr) {}
+    
+    MyString(const char* str) : head(nullptr) {
+        if (!str) return;
+        CharNode* current = nullptr;
+        while (*str) {
+            CharNode* newNode = new CharNode(*str);
+            if (!head) {
+                head = newNode;
+                current = head;
+            } else {
+                current->next = newNode;
+                current = newNode;
+            }
+            str++;
+        }
+    }
+    
+    MyString(const MyString& other) : head(nullptr) {
+        CharNode* otherCurrent = other.head;
+        CharNode* current = nullptr;
+        while (otherCurrent) {
+            CharNode* newNode = new CharNode(otherCurrent->data);
+            if (!head) {
+                head = newNode;
+                current = head;
+            } else {
+                current->next = newNode;
+                current = newNode;
+            }
+            otherCurrent = otherCurrent->next;
+        }
+    }
+    
+    ~MyString() {
+        while (head) {
+            CharNode* temp = head;
+            head = head->next;
+            delete temp;
+        }
+    }
+    
+    MyString& operator=(const MyString& other) {
+        if (this != &other) {
+            this->~MyString();
+            head = nullptr;
+            CharNode* otherCurrent = other.head;
+            CharNode* current = nullptr;
+            while (otherCurrent) {
+                CharNode* newNode = new CharNode(otherCurrent->data);
+                if (!head) {
+                    head = newNode;
+                    current = head;
+                } else {
+                    current->next = newNode;
+                    current = newNode;
+                }
+                otherCurrent = otherCurrent->next;
+            }
+        }
+        return *this;
+    }
+    
+    bool operator==(const MyString& other) const {
+        CharNode* curr1 = head;
+        CharNode* curr2 = other.head;
+        while (curr1 && curr2) {
+            if (curr1->data != curr2->data) return false;
+            curr1 = curr1->next;
+            curr2 = curr2->next;
+        }
+        return curr1 == curr2; // both should be nullptr
+    }
+    
+    bool operator<(const MyString& other) const {
+        CharNode* curr1 = head;
+        CharNode* curr2 = other.head;
+        while (curr1 && curr2) {
+            if (curr1->data != curr2->data)
+                return curr1->data < curr2->data;
+            curr1 = curr1->next;
+            curr2 = curr2->next;
+        }
+        return !curr1 && curr2; // shorter string is less
+    }
+    
+    bool operator>(const MyString& other) const {
+        return other < *this;
+    }
+    
+    friend std::ostream& operator<<(std::ostream& os, const MyString& str) {
+        CharNode* current = str.head;
+        while (current) {
+            os << current->data;
+            current = current->next;
+        }
+        return os;
+    }
+    
+    friend std::istream& operator>>(std::istream& is, MyString& str) {
+        char c;
+        str.~MyString();
+        str.head = nullptr;
+        CharNode* current = nullptr;
+        while (is.get(c) && !isspace(c)) {
+            CharNode* newNode = new CharNode(c);
+            if (!str.head) {
+                str.head = newNode;
+                current = str.head;
+            } else {
+                current->next = newNode;
+                current = newNode;
+            }
+        }
+        return is;
+    }
+
+    MyString operator+(const MyString& other) const {
+        MyString result(*this);
+        if (!other.head) return result;
+        
+        CharNode* current = result.head;
+        if (!current) {
+            result = other;
+            return result;
+        }
+        
+        while (current->next) {
+            current = current->next;
+        }
+        
+        CharNode* otherCurrent = other.head;
+        while (otherCurrent) {
+            current->next = new CharNode(otherCurrent->data);
+            current = current->next;
+            otherCurrent = otherCurrent->next;
+        }
+        return result;
+    }
+
+    bool empty() const {
+        return head == nullptr;
     }
 };
 

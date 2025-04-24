@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 #include <iterator>
-#include "Algorithms.hpp"
 
 template<typename T>
 class Node {
@@ -135,33 +134,17 @@ public:
         return nullptr;
     }
 
-    // Sorting methods
-    void mergeSort() {
-        if (!head || !head->next) return;
-        head = SortingAlgorithms<T>::mergeSort(head);
-    }
-
-    void heapSort() {
-        SortingAlgorithms<T>::heapSort(*this);
-    }
-
-    void jumpSort() {
-        SortingAlgorithms<T>::jumpSort(*this);
-    }
+    Node<T>* getHead() const { return head; }
+    
+    int getSize() const { return size; }
+    
+    void setHead(Node<T>* newHead) { head = newHead; }
 
     void display() {
         for (auto it = begin(); it != end(); ++it) {
             std::cout << *it << " -> ";
         }
         std::cout << "nullptr" << std::endl;
-    }
-
-    int getSize() const {
-        return size;
-    }
-
-    Node<T>* getHead() const {
-        return head;
     }
 };
 
