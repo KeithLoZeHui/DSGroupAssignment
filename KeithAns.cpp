@@ -8,8 +8,7 @@
 #include <chrono>
 #include <iomanip>
 #include <stdexcept>
-
-
+#include <cmath>
 
 // Structure to store transaction data
 struct Transaction {
@@ -104,17 +103,38 @@ int safeStoi(const String& str) {
     }
 }
 
+// Helper function to split customer and product ID
+void splitCustomerProduct(const String& combined, String& customerId, String& productId) {
+    const char* str = combined.c_str();
+    String temp = "";
+    bool foundPipe = false;
+    
+    for (size_t i = 0; i < strlen(str); i++) {
+        if (str[i] == '|') {
+            customerId = temp;
+            temp = "";
+            foundPipe = true;
+        } else {
+            char c[2] = {str[i], '\0'};
+            temp = temp + String(c);
+        }
+    }
+    if (foundPipe) {
+        productId = temp;
+    }
+}
+
 // Helper function to process transactions
 void processTransaction(const StringArray& parts, LinkedList<Transaction>& transactions,
                       int& totalTransactions, int& electronicsCredit, int& totalElectronics) {
-    if (parts.getSize() >= 6) {
+    if (parts.getSize() >= 5) {  // Changed from 6 to 5 due to combined customer|product field
         Transaction t;
-        t.customerId = parts[0];
-        t.productId = parts[1];
+        String combined = parts[0];
+        splitCustomerProduct(combined, t.customerId, t.productId);
+        t.category = parts[1];
         t.price = safeStod(parts[2]);
         t.date = parts[3];
-        t.category = parts[4];
-        t.paymentMethod = parts[5];
+        t.paymentMethod = parts[4];
         
         transactions.insert(t);
         totalTransactions++;
@@ -210,16 +230,16 @@ int main() {
         }
     }
 
-    // 1. Sort transactions by date using quick sort
+    // 1. Sort transactions by date using merge sort
     std::cout << "\n1. Transaction Analysis:" << std::endl;
     std::cout << "Total number of transactions: " << totalTransactions << std::endl;
     std::cout << "Total number of reviews: " << reviews.getSize() << std::endl;
 
     LinkedList<Transaction> transactionsCopy = transactions;
-    auto quickSortTime = measureSortTime(SortingAlgorithms<Transaction>::quickSort, transactionsCopy);
+    auto mergeSortTime = measureSortTime(SortingAlgorithms<Transaction>::mergeSort, transactionsCopy);
 
     std::cout << "\nSorting Performance:" << std::endl;
-    std::cout << "Quick Sort time: " << quickSortTime << " milliseconds" << std::endl;
+    std::cout << "Merge Sort time: " << mergeSortTime << " milliseconds" << std::endl;
 
     // 2. Calculate percentage of Electronics purchases made with Credit Card
     double percentage = (totalElectronics > 0) ? 
@@ -231,8 +251,8 @@ int main() {
     std::cout << "Percentage of Electronics purchases made with Credit Card: " 
               << std::fixed << std::setprecision(2) << percentage << "%" << std::endl;
 
-    // 3. Sort and display most frequent words in 1-star reviews
-    SortingAlgorithms<WordFreq>::quickSort(wordFrequencies);
+    // 3. Sort and display most frequent words in 1-star reviews using merge sort
+    SortingAlgorithms<WordFreq>::mergeSort(wordFrequencies);
     
     std::cout << "\n3. Most Frequent Words in 1-Star Reviews:" << std::endl;
     int count = 0;
@@ -242,6 +262,15 @@ int main() {
             std::cout << it->word << ": " << it->frequency << " occurrences" << std::endl;
         }
     }
+
+    // 4. Demonstrate jump search on sorted transactions
+    std::cout << "\n4. Jump Search Demonstration:" << std::endl;
+    Transaction searchTarget;
+    searchTarget.date = "2023-01-01";  // Example date to search for
+    
+    bool found = SortingAlgorithms<Transaction>::jumpSearch(transactionsCopy, searchTarget);
+    std::cout << "Transaction with date " << searchTarget.date << " was " 
+              << (found ? "found" : "not found") << " in the sorted list." << std::endl;
 
     std::cout << "\nPress Enter to exit..."; 
     std::cin.get();
