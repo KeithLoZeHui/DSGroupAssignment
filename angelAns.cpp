@@ -167,7 +167,7 @@ int main() {
 
     // Q1: Sort by date
     sortByDate(transactions, transactionCount);
-    cout << "Sorted transactions by date:\n";
+    cout << "Q1: Sorted transactions by date:\n";
     for (int i = 0; i < transactionCount; ++i) {
         cout << transactions[i].date << " - " << transactions[i].product << endl;
     }
@@ -183,7 +183,7 @@ int main() {
         }
     }
     double percent = electronicsTotal ? (electronicsCC * 100.0 / electronicsTotal) : 0;
-    cout << "\nCredit Card purchases in Electronics: " << percent << "%\n";
+    cout << "\nQ2: Credit Card purchases in Electronics: " << percent << "%\n";
 
     // Q3: Word frequency in 1-star reviews
     for (int i = 0; i < reviewCount; ++i) {
@@ -193,7 +193,7 @@ int main() {
     }
 
     sortWordsByFrequency();
-    cout << "\nTop words in 1-star reviews:\n";
+    cout << "\n Q3: Top words in 1-star reviews:\n";
     for (int i = 0; i < min(wordCount, 5); ++i) {
         cout << wordList[i].word << " - " << wordList[i].count << endl;
     }
