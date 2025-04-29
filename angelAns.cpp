@@ -121,21 +121,35 @@ void loadTransactions(const std::string &filename) {
     getline(file, line); // Skip header
     while (getline(file, line) && transactionCount < MAX_TRANSACTIONS) {
         std::stringstream ss(line);
-        std::string custID, product, price, date, category, payment;
-        getline(ss, custID, ',');
-        getline(ss, product, ',');
-        getline(ss, price, ',');
-        getline(ss, date, ',');
-        getline(ss, category, ',');
-        getline(ss, payment, '\n');
-        transactions[transactionCount++] = Transaction(
-            MyString(custID.c_str()), 
-            MyString(product.c_str()), 
-            stod(price), 
-            MyString(date.c_str()), 
-            MyString(category.c_str()), 
-            MyString(payment.c_str())
-        );
+        std::string customer, product, category, price, date, payment;
+        
+        // Split by | first
+        size_t pipe_pos = line.find('|');
+        if (pipe_pos != std::string::npos) {
+            customer = line.substr(0, pipe_pos);
+            std::string rest = line.substr(pipe_pos + 1);
+            
+            // Parse the rest with commas
+            std::stringstream ss_rest(rest);
+            getline(ss_rest, product, ',');
+            getline(ss_rest, category, ',');
+            getline(ss_rest, price, ',');
+            getline(ss_rest, date, ',');
+            getline(ss_rest, payment, '\n');
+            
+            // Clean up any whitespace
+            category = category.substr(category.find_first_not_of(" \t"));
+            payment = payment.substr(payment.find_first_not_of(" \t"));
+            
+            transactions[transactionCount++] = Transaction(
+                MyString(customer.c_str()), 
+                MyString(product.c_str()), 
+                stod(price), 
+                MyString(date.c_str()), 
+                MyString(category.c_str()), 
+                MyString(payment.c_str())
+            );
+        }
     }
     file.close();
 }
@@ -168,7 +182,7 @@ int main() {
     // Q1: Sort by date
     sortByDate(transactions, transactionCount);
     cout << "Q1: Sorted transactions by date:\n";
-    for (int i = 0; i < transactionCount; ++i) {
+    for (int i = 0; i < min(transactionCount, 5); ++i) {
         cout << transactions[i].date << " - " << transactions[i].product << endl;
     }
     cout << "Total Transactions: " << transactionCount << "\nTotal Reviews: " << reviewCount << endl;
@@ -176,14 +190,24 @@ int main() {
     // Q2: Electronics category paid with Credit Card
     int electronicsTotal = 0, electronicsCC = 0;
     for (int i = 0; i < transactionCount; ++i) {
-        if (transactions[i].category == "Electronics") {
+        // Debug output
+        cout << "Transaction " << i << ": Category=" << transactions[i].category 
+             << ", Payment=" << transactions[i].paymentMethod << endl;
+            
+        if (transactions[i].category == "Electronics" || 
+            transactions[i].category == "Electronics ") {  // Handle potential trailing space
             electronicsTotal++;
-            if (transactions[i].paymentMethod == "Credit Card")
+            if (transactions[i].paymentMethod == "Credit Card" || 
+                transactions[i].paymentMethod == "Credit Card ") {  // Handle potential trailing space
                 electronicsCC++;
+            }
         }
     }
     double percent = electronicsTotal ? (electronicsCC * 100.0 / electronicsTotal) : 0;
-    cout << "Q2: Credit Card purchases in Electronics: " << percent << "%\n";
+    cout << "\nQ2: Electronics Analysis:\n";
+    cout << "Total Electronics purchases: " << electronicsTotal << endl;
+    cout << "Electronics purchases with Credit Card: " << electronicsCC << endl;
+    cout << "Percentage: " << percent << "%\n";
 
     // Q3: Word frequency in 1-star reviews
     for (int i = 0; i < reviewCount; ++i) {
@@ -193,7 +217,7 @@ int main() {
     }
 
     sortWordsByFrequency();
-    cout << "Q3: Top words in 1-star reviews:\n";
+    cout << "\nQ3: Top words in 1-star reviews:\n";
     for (int i = 0; i < min(wordCount, 5); ++i) {
         cout << wordList[i].word << " - " << wordList[i].count << endl;
     }
