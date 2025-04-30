@@ -310,9 +310,11 @@ int main() {
     // Count electronics purchases (without timing)
     int electronicsTotal = 0, electronicsCC = 0;
     for (auto it = transactions.begin(); it != transactions.end(); ++it) {
-        if (it->category == String("Electronics")) {
+        String trimmedCategory = it->category.trim();
+        String trimmedPayment = it->paymentMethod.trim();
+        if (trimmedCategory == String("Electronics")) {
             electronicsTotal++;
-            if (it->paymentMethod == String("Credit Card")) {
+            if (trimmedPayment == String("Credit Card")) {
                 electronicsCC++;
             }
         }
@@ -366,8 +368,6 @@ int main() {
     std::cout << "Percentage of Electronics purchases made with Credit Card: " << std::fixed << std::setprecision(2) << percentageArray << "%\n";
     std::cout << "Performance Metrics:\n";
     std::cout << "  Sorting time: " << std::fixed << std::setprecision(6) << arraySortTime << " seconds\n";
-    std::cout << "  Searching time: " << std::fixed << std::setprecision(6) << arraySearchTime << " seconds\n";
-    std::cout << "  Total processing time: " << std::fixed << std::setprecision(6) << (arraySortTime + arraySearchTime) << " seconds\n";
 
     // 3. Sort and display most frequent words in 1-star reviews with timing
     std::cout << "\n3. Word Frequency Analysis Performance:" << std::endl;

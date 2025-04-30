@@ -96,6 +96,15 @@ public:
         }
     }
 
+    String trim() const {
+        int start = 0, end = static_cast<int>(length) - 1;
+        while (start <= end && isspace(data[start])) start++;
+        while (end >= start && isspace(data[end])) end--;
+        int newLen = end - start + 1;
+        if (newLen <= 0) return String("");
+        return String(data + start, newLen);
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const String& str) {
         os << str.data;
         return os;
