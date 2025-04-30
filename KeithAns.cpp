@@ -299,46 +299,84 @@ int main() {
     std::cout << "Merge Sort (Array) time: " << arrSortTime << " seconds" << std::endl;
 
     // 2. Calculate percentage of Electronics purchases made with Credit Card
-    auto startStats = std::chrono::high_resolution_clock::now();
-    double percentage = (totalElectronics > 0) ? 
-        (static_cast<double>(electronicsCredit) / totalElectronics) * 100 : 0;
-    auto endStats = std::chrono::high_resolution_clock::now();
-    double statsTime = std::chrono::duration_cast<std::chrono::microseconds>(endStats - startStats).count() / 1e6;
-    
     std::cout << "\n2. Electronics Category Analysis:" << std::endl;
-    std::cout << "Total Electronics purchases: " << totalElectronics << std::endl;
-    std::cout << "Electronics purchases with Credit Card: " << electronicsCredit << std::endl;
-    std::cout << "Percentage of Electronics purchases made with Credit Card: " 
-              << std::fixed << std::setprecision(2) << percentage << "%" << std::endl;
-    std::cout << std::fixed << std::setprecision(20);
-    std::cout << "Electronics statistics calculation time: " << statsTime << " seconds" << std::endl;
-
-    // --- ARRAY VERSION for stats ---
-    auto startArrStats = std::chrono::high_resolution_clock::now();
-    int arrTotalElectronics = 0, arrElectronicsCredit = 0;
-    for (int i = 0; i < transactionsArr.getSize(); ++i) {
-        if (transactionsArr[i].category == String("Electronics")) {
-            arrTotalElectronics++;
-            if (transactionsArr[i].paymentMethod == String("Credit Card")) {
-                arrElectronicsCredit++;
+    
+    // Measure sorting time
+    auto startSort1 = std::chrono::high_resolution_clock::now();
+    SortingAlgorithms<Transaction>::mergeSort(transactions);
+    auto endSort1 = std::chrono::high_resolution_clock::now();
+    auto sortTime1 = std::chrono::duration_cast<std::chrono::milliseconds>(endSort1 - startSort1).count();
+    
+    // Count electronics purchases (without timing)
+    int electronicsTotal = 0, electronicsCC = 0;
+    for (auto it = transactions.begin(); it != transactions.end(); ++it) {
+        if (it->category == String("Electronics")) {
+            electronicsTotal++;
+            if (it->paymentMethod == String("Credit Card")) {
+                electronicsCC++;
             }
         }
     }
-    double arrPercentage = (arrTotalElectronics > 0) ? (static_cast<double>(arrElectronicsCredit) / arrTotalElectronics) * 100 : 0;
-    auto endArrStats = std::chrono::high_resolution_clock::now();
-    double arrStatsTime = std::chrono::duration_cast<std::chrono::microseconds>(endArrStats - startArrStats).count() / 1e6;
-    std::cout << "Electronics stats (Array) calculation time: " << arrStatsTime << " seconds" << std::endl;
-    std::cout << "Total Electronics purchases (Array): " << arrTotalElectronics << std::endl;
-    std::cout << "Electronics purchases with Credit Card (Array): " << arrElectronicsCredit << std::endl;
-    std::cout << "Percentage of Electronics purchases made with Credit Card (Array): " << std::fixed << std::setprecision(2) << arrPercentage << "%" << std::endl;
-
-    // 3. Sort and display most frequent words in 1-star reviews using merge sort
-    auto startWordSort = std::chrono::high_resolution_clock::now();
-    SortingAlgorithms<WordFreq>::mergeSort(wordFrequencies);
-    auto endWordSort = std::chrono::high_resolution_clock::now();
-    double wordSortTime = std::chrono::duration_cast<std::chrono::microseconds>(endWordSort - startWordSort).count() / 1e6;
     
-    std::cout << "\n3. Most Frequent Words in 1-Star Reviews:" << std::endl;
+    double percentage = (electronicsTotal > 0) ? 
+        (static_cast<double>(electronicsCC) / electronicsTotal) * 100 : 0;
+    
+    std::cout << "Total Electronics purchases: " << electronicsTotal << std::endl;
+    std::cout << "Electronics purchases with Credit Card: " << electronicsCC << std::endl;
+    std::cout << "Percentage of Electronics purchases made with Credit Card: " 
+              << std::fixed << std::setprecision(2) << percentage << "%" << std::endl;
+    
+    std::cout << "\nPerformance Metrics:" << std::endl;
+    std::cout << "Sorting Time: " << sortTime1 << " milliseconds" << std::endl;
+
+    // --- ARRAY VERSION for stats ---
+    Array<Transaction> transactionsArray(transactions.getSize());
+    for (auto it = transactions.begin(); it != transactions.end(); ++it) {
+        transactionsArray.push_back(*it);
+    }
+    
+    // Measure sorting time for array
+    auto startArraySort = std::chrono::high_resolution_clock::now();
+    mergeSortArray(transactionsArray, 0, transactionsArray.getSize() - 1);
+    auto endArraySort = std::chrono::high_resolution_clock::now();
+    double arraySortTime = std::chrono::duration_cast<std::chrono::microseconds>(endArraySort - startArraySort).count() / 1e6;
+
+    // Measure searching time for array
+    auto startArraySearch = std::chrono::high_resolution_clock::now();
+    int totalElectronicsArray = 0;
+    int creditCardElectronicsArray = 0;
+    for (int i = 0; i < transactionsArray.getSize(); ++i) {
+        if (transactionsArray[i].category == "Electronics") {
+            totalElectronicsArray++;
+            if (transactionsArray[i].paymentMethod == "Credit Card") {
+                creditCardElectronicsArray++;
+            }
+        }
+    }
+    auto endArraySearch = std::chrono::high_resolution_clock::now();
+    double arraySearchTime = std::chrono::duration_cast<std::chrono::microseconds>(endArraySearch - startArraySearch).count() / 1e6;
+
+    // Calculate percentage for array
+    double percentageArray = (totalElectronicsArray > 0) ? (static_cast<double>(creditCardElectronicsArray) / totalElectronicsArray * 100) : 0.0;
+
+    // Display results for array
+    std::cout << "\nArray Implementation Results:\n";
+    std::cout << "Total Electronics purchases: " << totalElectronicsArray << "\n";
+    std::cout << "Electronics purchases with Credit Card: " << creditCardElectronicsArray << "\n";
+    std::cout << "Percentage of Electronics purchases made with Credit Card: " << std::fixed << std::setprecision(2) << percentageArray << "%\n";
+    std::cout << "Performance Metrics:\n";
+    std::cout << "  Sorting time: " << std::fixed << std::setprecision(6) << arraySortTime << " seconds\n";
+    std::cout << "  Searching time: " << std::fixed << std::setprecision(6) << arraySearchTime << " seconds\n";
+    std::cout << "  Total processing time: " << std::fixed << std::setprecision(6) << (arraySortTime + arraySearchTime) << " seconds\n";
+
+    // 3. Sort and display most frequent words in 1-star reviews with timing
+    std::cout << "\n3. Word Frequency Analysis Performance:" << std::endl;
+    
+    // Sort word frequencies (without timing)
+    SortingAlgorithms<WordFreq>::mergeSort(wordFrequencies);
+    
+    // Measure searching time for word frequencies
+    auto startWordSearch = std::chrono::high_resolution_clock::now();
     int count = 0;
     for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
         if (count++ >= 10) break;  // Show top 10 words
@@ -346,46 +384,12 @@ int main() {
             std::cout << it->word << ": " << it->frequency << " occurrences" << std::endl;
         }
     }
-    std::cout << "Word frequency sorting time: " << wordSortTime << " seconds" << std::endl;
-
-    // --- ARRAY VERSION for word frequency ---
-    Array<WordFreq> wordFreqArr(wordFrequencies.getSize());
-    for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
-        wordFreqArr.push_back(*it);
-    }
-    auto startArrWordSort = std::chrono::high_resolution_clock::now();
-    mergeSortArray(wordFreqArr, 0, wordFreqArr.getSize() - 1);
-    auto endArrWordSort = std::chrono::high_resolution_clock::now();
-    double arrWordSortTime = std::chrono::duration_cast<std::chrono::microseconds>(endArrWordSort - startArrWordSort).count() / 1e6;
-    std::cout << "Word frequency sorting (Array) time: " << arrWordSortTime << " seconds" << std::endl;
-    std::cout << "Most Frequent Words in 1-Star Reviews (Array):" << std::endl;
-    int arrCount = 0;
-    for (int i = 0; i < wordFreqArr.getSize(); ++i) {
-        if (arrCount++ >= 10) break;
-        if (wordFreqArr[i].word.size() > 2) {
-            std::cout << wordFreqArr[i].word << ": " << wordFreqArr[i].frequency << " occurrences" << std::endl;
-        }
-    }
-
-    // 4. Demonstrate jump search on sorted transactions
-    std::cout << "\n4. Jump Search Demonstration:" << std::endl;
-    Transaction searchTarget;
-    searchTarget.date = "2023-01-01";  // Example date to search for
+    auto endWordSearch = std::chrono::high_resolution_clock::now();
+    auto wordSearchTime = std::chrono::duration_cast<std::chrono::milliseconds>(endWordSearch - startWordSearch).count();
     
-    bool found = SortingAlgorithms<Transaction>::jumpSearch(transactionsCopy, searchTarget);
-    std::cout << "Transaction with date " << searchTarget.date << " was " 
-              << (found ? "found" : "not found") << " in the sorted list." << std::endl;
-
-    // --- ARRAY VERSION for jump search ---
-    std::cout << "\nJump Search Demonstration (Array):" << std::endl;
-    Transaction searchTargetArr;
-    searchTargetArr.date = "2023-01-01";
-    auto startArrJump = std::chrono::high_resolution_clock::now();
-    bool foundArr = jumpSearchArray(transactionsArr, searchTargetArr);
-    auto endArrJump = std::chrono::high_resolution_clock::now();
-    double arrJumpTime = std::chrono::duration_cast<std::chrono::microseconds>(endArrJump - startArrJump).count() / 1e6;
-    std::cout << "Transaction with date " << searchTargetArr.date << " was " << (foundArr ? "found" : "not found") << " in the sorted array." << std::endl;
-    std::cout << "Jump Search (Array) time: " << arrJumpTime << " seconds" << std::endl;
+    std::cout << "\nPerformance Metrics:" << std::endl;
+    std::cout << "Searching Time: " << wordSearchTime << " milliseconds" << std::endl;
+    std::cout << "Total Processing Time: " << wordSearchTime << " milliseconds" << std::endl;
 
     std::cout << "\nPress Enter to exit..."; 
     std::cin.get();
