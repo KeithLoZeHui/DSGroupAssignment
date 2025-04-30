@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 #include "CustomString.hpp"
 #include "Transaction.hpp"
 #include "Review.hpp"
@@ -8,7 +9,7 @@
 
 using namespace std;
 
-#define MAX_TRANSACTIONS 1000
+#define MAX_TRANSACTIONS 5000
 #define MAX_REVIEWS 1000
 #define MAX_WORDS 5000
 
@@ -36,17 +37,34 @@ MyString cleanWord(const MyString &word) {
     return result;
 }
 
-// Simple insertion sort by date
-void sortByDate(Transaction arr[], int n) {
-    for (int i = 1; i < n; ++i) {
-        Transaction key = arr[i];
-        int j = i - 1;
-        while (j >= 0 && arr[j].date > key.date) {
-            arr[j + 1] = arr[j];
-            --j;
+// Partition function for quicksort
+int partition(Transaction arr[], int low, int high) {
+    Transaction pivot = arr[high];
+    int i = (low - 1);
+    
+    for (int j = low; j <= high - 1; j++) {
+        // Compare dates using < operator
+        if (!(pivot.date < arr[j].date)) {
+            i++;
+            swap(arr[i], arr[j]);
         }
-        arr[j + 1] = key;
     }
+    swap(arr[i + 1], arr[high]);
+    return (i + 1);
+}
+
+// Quicksort implementation
+void quickSort(Transaction arr[], int low, int high) {
+    if (low < high) {
+        int pi = partition(arr, low, high);
+        quickSort(arr, low, pi - 1);
+        quickSort(arr, pi + 1, high);
+    }
+}
+
+// Wrapper function for sorting by date
+void sortByDate(Transaction arr[], int n) {
+    quickSort(arr, 0, n - 1);
 }
 
 // Binary search for a category (assumes sorted by category)
@@ -180,20 +198,22 @@ int main() {
     loadReviews("reviewsClean.csv");
 
     // Q1: Sort by date
+    cout << "Q1: Analyzing transactions...\n";
+    auto start = std::chrono::high_resolution_clock::now();
+    
     sortByDate(transactions, transactionCount);
-    cout << "Q1: Sorted transactions by date:\n";
-    for (int i = 0; i < min(transactionCount, 5); ++i) {
-        cout << transactions[i].date << " - " << transactions[i].product << endl;
-    }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    
+    cout << "Total transactions analyzed: " << transactionCount << "\n";
+    cout << "Time taken: " << duration.count() << " seconds\n\n";
+
     cout << "Total Transactions: " << transactionCount << "\nTotal Reviews: " << reviewCount << endl;
 
     // Q2: Electronics category paid with Credit Card
     int electronicsTotal = 0, electronicsCC = 0;
     for (int i = 0; i < transactionCount; ++i) {
-        // Debug output
-        cout << "Transaction " << i << ": Category=" << transactions[i].category 
-             << ", Payment=" << transactions[i].paymentMethod << endl;
-            
         if (transactions[i].category == "Electronics" || 
             transactions[i].category == "Electronics ") {  // Handle potential trailing space
             electronicsTotal++;
