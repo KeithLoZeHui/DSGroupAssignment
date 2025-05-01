@@ -4,7 +4,9 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <chrono>
 #include "LinkedList.hpp"
+#include "Array.hpp"
 
 template<typename T>
 class SortingAlgorithms {
@@ -191,5 +193,57 @@ public:
         return found;
     }
 };
+
+// Helper function to measure sorting time
+template<typename T>
+long long measureSortTime(void (*sortFunc)(LinkedList<T>&), LinkedList<T>& list) {
+    auto start = std::chrono::high_resolution_clock::now();
+    sortFunc(list);
+    auto end = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+}
+
+// Merge sort for Array<T>
+template<typename T>
+void mergeSortArray(Array<T>& arr, int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        mergeSortArray(arr, left, mid);
+        mergeSortArray(arr, mid + 1, right);
+        // Merge
+        int n1 = mid - left + 1;
+        int n2 = right - mid;
+        Array<T> L(n1), R(n2);
+        for (int i = 0; i < n1; ++i) L.push_back(arr[left + i]);
+        for (int j = 0; j < n2; ++j) R.push_back(arr[mid + 1 + j]);
+        int i = 0, j = 0, k = left;
+        while (i < n1 && j < n2) {
+            if (!(L[i] > R[j])) arr[k++] = L[i++];
+            else arr[k++] = R[j++];
+        }
+        while (i < n1) arr[k++] = L[i++];
+        while (j < n2) arr[k++] = R[j++];
+    }
+}
+
+// Jump search for Array<T>
+template<typename T>
+bool jumpSearchArray(const Array<T>& arr, const T& target) {
+    int n = arr.getSize();
+    if (n == 0) return false;
+    int step = sqrt(n);
+    int prev = 0;
+    while (prev < n && !(arr[std::min(step, n) - 1] > target) && arr[std::min(step, n) - 1] < target) {
+        prev = step;
+        step += sqrt(n);
+        if (prev >= n) return false;
+    }
+    while (prev < n && arr[prev] < target) {
+        prev++;
+        if (prev == std::min(step, n)) return false;
+    }
+    if (prev < n && !(arr[prev] > target) && !(target > arr[prev])) return true;
+    return false;
+}
 
 #endif // ALGORITHMS_HPP 

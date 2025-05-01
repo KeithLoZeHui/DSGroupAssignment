@@ -50,17 +50,44 @@ struct WordFreq {
     int frequency;
 
     bool operator>(const WordFreq& other) const {
-        return frequency > other.frequency;
+        // Sort by frequency in descending order
+        if (frequency != other.frequency) {
+            return frequency > other.frequency;
+        }
+        // If frequencies are equal, sort alphabetically
+        return word < other.word;
     }
 
     bool operator<(const WordFreq& other) const {
-        return frequency < other.frequency;
+        // Sort by frequency in descending order
+        if (frequency != other.frequency) {
+            return frequency < other.frequency;
+        }
+        // If frequencies are equal, sort alphabetically
+        return word > other.word;
     }
 };
 
 // Helper function to process a single word
 void processWord(String& word, LinkedList<WordFreq>& wordFrequencies) {
+    // Skip empty words or words with non-printable characters
+    if (word.size() == 0) return;
+    
+    // Convert to lowercase
     word.toLower();
+    
+    // Skip words that are just numbers or special characters
+    bool hasLetter = false;
+    const char* str = word.c_str();
+    for (size_t i = 0; i < strlen(str); i++) {
+        if (isalpha(str[i])) {
+            hasLetter = true;
+            break;
+        }
+    }
+    if (!hasLetter) return;
+    
+    // Add or update word frequency
     bool found = false;
     for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
         if (it->word == word) {
@@ -160,20 +187,27 @@ void processReview(const StringArray& parts, LinkedList<Review>& reviews,
         
         reviews.insert(r);
 
-        // Process 1-star reviews for word frequency
+        // Process only 1-star reviews for word frequency analysis
         if (r.rating == 1) {
-            String current;
+            String current = "";
             const char* cstr = r.reviewText.c_str();
             
             for (size_t i = 0; i < strlen(cstr); i++) {
-                if (isspace(cstr[i])) {
-                    if (strlen(current.c_str()) > 0) {
+                // If we hit a space or punctuation, process the current word
+                if (isspace(cstr[i]) || ispunct(cstr[i])) {
+                    if (current.size() > 0) {
                         processWord(current, wordFrequencies);
-                        current = String("");
+                        current = "";
                     }
-                } else if (isalpha(cstr[i])) {
-                    char temp[2] = {cstr[i], '\0'};
-                    current = String(current.c_str()) + String(temp);
+                } 
+                // Only add alphanumeric characters to the current word
+                else if (isalpha(cstr[i]) || isdigit(cstr[i])) {
+                    char c[2] = {cstr[i], '\0'};
+                    // Convert uppercase to lowercase
+                    if (c[0] >= 'A' && c[0] <= 'Z') {
+                        c[0] = c[0] + ('a' - 'A');
+                    }
+                    current = current + String(c);
                 }
             }
             if (strlen(current.c_str()) > 0) {
@@ -183,56 +217,7 @@ void processReview(const StringArray& parts, LinkedList<Review>& reviews,
     }
 }
 
-// Helper function to measure sorting time
-template<typename T>
-long long measureSortTime(void (*sortFunc)(LinkedList<T>&), LinkedList<T>& list) {
-    auto start = std::chrono::high_resolution_clock::now();
-    sortFunc(list);
-    auto end = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-}
-
-// Merge sort for Array<T>
-template<typename T>
-void mergeSortArray(Array<T>& arr, int left, int right) {
-    if (left < right) {
-        int mid = left + (right - left) / 2;
-        mergeSortArray(arr, left, mid);
-        mergeSortArray(arr, mid + 1, right);
-        // Merge
-        int n1 = mid - left + 1;
-        int n2 = right - mid;
-        Array<T> L(n1), R(n2);
-        for (int i = 0; i < n1; ++i) L.push_back(arr[left + i]);
-        for (int j = 0; j < n2; ++j) R.push_back(arr[mid + 1 + j]);
-        int i = 0, j = 0, k = left;
-        while (i < n1 && j < n2) {
-            if (!(L[i] > R[j])) arr[k++] = L[i++];
-            else arr[k++] = R[j++];
-        }
-        while (i < n1) arr[k++] = L[i++];
-        while (j < n2) arr[k++] = R[j++];
-    }
-}
-
-template<typename T>
-bool jumpSearchArray(const Array<T>& arr, const T& target) {
-    int n = arr.getSize();
-    if (n == 0) return false;
-    int step = sqrt(n);
-    int prev = 0;
-    while (prev < n && !(arr[std::min(step, n) - 1] > target) && arr[std::min(step, n) - 1] < target) {
-        prev = step;
-        step += sqrt(n);
-        if (prev >= n) return false;
-    }
-    while (prev < n && arr[prev] < target) {
-        prev++;
-        if (prev == std::min(step, n)) return false;
-    }
-    if (prev < n && !(arr[prev] > target) && !(target > arr[prev])) return true;
-    return false;
-}
+// Note: The sorting and searching functions have been moved to Algorithms.hpp
 
 int main() {
     LinkedList<Transaction> transactions;
@@ -369,27 +354,59 @@ int main() {
     std::cout << "Performance Metrics:\n";
     std::cout << "  Sorting time: " << std::fixed << std::setprecision(6) << arraySortTime << " seconds\n";
 
-    // 3. Sort and display most frequent words in 1-star reviews with timing
+    // 3. Word Frequency Analysis with Jump Search timing
     std::cout << "\n3. Word Frequency Analysis Performance:" << std::endl;
     
-    // Sort word frequencies (without timing)
+    // Sort the word frequencies for display and to prepare for jump search
     SortingAlgorithms<WordFreq>::mergeSort(wordFrequencies);
     
-    // Measure searching time for word frequencies
-    auto startWordSearch = std::chrono::high_resolution_clock::now();
+    // Display the top 10 words
     int count = 0;
+    std::cout << "--- First 10 Words Frequency ---" << std::endl;
     for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
-        if (count++ >= 10) break;  // Show top 10 words
-        if (it->word.size() > 2) {  // Filter out very short words
-            std::cout << it->word << ": " << it->frequency << " occurrences" << std::endl;
+        std::cout << it->word << ": " << it->frequency << " occurrences" << std::endl;
+        if (++count >= 10) break;  // Show top 10 words
+    }
+    
+    // Create a larger list for jump search measurement
+    Array<WordFreq> searchArray(10000);
+    
+    // Fill the array with copies of the word frequencies
+    for (int i = 0; i < 100; i++) {
+        for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
+            WordFreq wf;
+            wf.word = it->word;
+            wf.frequency = it->frequency;
+            searchArray.push_back(wf);
         }
     }
-    auto endWordSearch = std::chrono::high_resolution_clock::now();
-    auto wordSearchTime = std::chrono::duration_cast<std::chrono::milliseconds>(endWordSearch - startWordSearch).count();
+    
+    // Sort the array for jump search
+    mergeSortArray(searchArray, 0, searchArray.getSize() - 1);
+    
+    std::cout << "\nMeasuring jump search time for " << searchArray.getSize() << " items..." << std::endl;
+    
+    // Get a target to search for (use the first word in our frequency list)
+    WordFreq target;
+    if (wordFrequencies.getSize() > 0) {
+        target = *wordFrequencies.begin();
+    }
+    
+    // Measure jump search time
+    auto startSearch = std::chrono::high_resolution_clock::now();
+    
+    // Perform multiple searches to get a measurable time
+    bool found = false;
+    for (int i = 0; i < 10000; i++) {
+        found = jumpSearchArray(searchArray, target);
+    }
+    
+    auto endSearch = std::chrono::high_resolution_clock::now();
+    double searchTime = std::chrono::duration_cast<std::chrono::microseconds>(endSearch - startSearch).count() / 1e6;
     
     std::cout << "\nPerformance Metrics:" << std::endl;
-    std::cout << "Searching Time: " << wordSearchTime << " milliseconds" << std::endl;
-    std::cout << "Total Processing Time: " << wordSearchTime << " milliseconds" << std::endl;
+    std::cout << "Jump Search Time: " << std::fixed << std::setprecision(6) << searchTime << " seconds" << std::endl;
+    std::cout << "Search Result: " << (found ? "Found" : "Not Found") << std::endl;
 
     std::cout << "\nPress Enter to exit..."; 
     std::cin.get();
