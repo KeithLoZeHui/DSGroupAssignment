@@ -66,6 +66,11 @@ struct WordFreq {
         // If frequencies are equal, sort alphabetically
         return word > other.word;
     }
+    
+    // Equality operator for comparison
+    bool operator==(const WordFreq& other) const {
+        return word == other.word;
+    }
 };
 
 // Helper function to process a single word
@@ -357,39 +362,54 @@ int main() {
     // 3. Word Frequency Analysis with Jump Search timing
     std::cout << "\n3. Word Frequency Analysis Performance:" << std::endl;
     
-    // Sort the word frequencies for display and to prepare for jump search
-    SortingAlgorithms<WordFreq>::mergeSort(wordFrequencies);
+    // Create a sorted array of word frequencies for easier manipulation
+    Array<WordFreq> sortedWords(wordFrequencies.getSize());
+    for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
+        sortedWords.push_back(*it);
+    }
+    
+    // Sort the array by frequency in descending order
+    for (int i = 0; i < sortedWords.getSize(); i++) {
+        for (int j = i + 1; j < sortedWords.getSize(); j++) {
+            if (sortedWords[i].frequency < sortedWords[j].frequency) {
+                WordFreq temp = sortedWords[i];
+                sortedWords[i] = sortedWords[j];
+                sortedWords[j] = temp;
+            }
+        }
+    }
     
     // Display the top 10 words
-    int count = 0;
     std::cout << "--- First 10 Words Frequency ---" << std::endl;
-    for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
-        std::cout << it->word << ": " << it->frequency << " occurrences" << std::endl;
-        if (++count >= 10) break;  // Show top 10 words
+    int displayCount = 0;
+    for (int i = 0; i < sortedWords.getSize() && displayCount < 10; i++) {
+        // Skip words that are too short (less than 3 characters)
+        if (sortedWords[i].word.size() < 3) continue;
+        
+        std::cout << sortedWords[i].word << ": " << sortedWords[i].frequency << " occurrences" << std::endl;
+        displayCount++;
     }
     
     // Create a larger list for jump search measurement
     Array<WordFreq> searchArray(10000);
     
-    // Fill the array with copies of the word frequencies
+    // Fill the array with copies of the sorted words to make it larger
     for (int i = 0; i < 100; i++) {
-        for (auto it = wordFrequencies.begin(); it != wordFrequencies.end(); ++it) {
-            WordFreq wf;
-            wf.word = it->word;
-            wf.frequency = it->frequency;
-            searchArray.push_back(wf);
+        for (int j = 0; j < sortedWords.getSize(); j++) {
+            searchArray.push_back(sortedWords[j]);
         }
     }
     
-    // Sort the array for jump search
+    // The array is already sorted by frequency, but we need to sort it again for jump search
+    // which requires the array to be sorted by the comparison operators
     mergeSortArray(searchArray, 0, searchArray.getSize() - 1);
     
     std::cout << "\nMeasuring jump search time for " << searchArray.getSize() << " items..." << std::endl;
     
-    // Get a target to search for (use the first word in our frequency list)
+    // Get a target to search for (use the most frequent word)
     WordFreq target;
-    if (wordFrequencies.getSize() > 0) {
-        target = *wordFrequencies.begin();
+    if (sortedWords.getSize() > 0) {
+        target = sortedWords[0];  // Most frequent word
     }
     
     // Measure jump search time
@@ -408,7 +428,7 @@ int main() {
     std::cout << "Jump Search Time: " << std::fixed << std::setprecision(6) << searchTime << " seconds" << std::endl;
     std::cout << "Search Result: " << (found ? "Found" : "Not Found") << std::endl;
 
-    std::cout << "\nPress Enter to exit..."; 
+    std::cout << "\nPress Enter to exit...";
     std::cin.get();
     return 0;
 } 
