@@ -119,6 +119,7 @@ public:
         strcpy(str.data, buffer);
         return is;
     }
+    
 };
 
 // Custom string implementation using linked list
