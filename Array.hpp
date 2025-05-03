@@ -12,7 +12,7 @@ private:
     int capacity;
 
     void resize(int newCapacity) {
-        std::unique_ptr<T[]> newData = std::make_unique<T[]>(newCapacity);
+        std::unique_ptr<T[]> newData(new T[newCapacity]);
         for (int i = 0; i < size; i++) {
             newData[i] = std::move(data[i]);
         }
@@ -22,14 +22,14 @@ private:
 
 public:
     // Constructors and destructor
-    Array(int initialCapacity = 10) : data(std::make_unique<T[]>(initialCapacity)), size(0), capacity(initialCapacity) {}
+    Array(int initialCapacity = 10) : data(new T[initialCapacity]), size(0), capacity(initialCapacity) {}
     
     ~Array() {
         // Destructor is implicitly called when std::unique_ptr goes out of scope
     }
 
     // Copy constructor
-    Array(const Array& other) : data(std::make_unique<T[]>(other.capacity)), size(other.size), capacity(other.capacity) {
+    Array(const Array& other) : data(new T[other.capacity]), size(other.size), capacity(other.capacity) {
         for (int i = 0; i < size; i++) {
             data[i] = other.data[i];
         }
@@ -38,7 +38,7 @@ public:
     // Assignment operator
     Array& operator=(const Array& other) {
         if (this != &other) {
-            std::unique_ptr<T[]> newData = std::make_unique<T[]>(other.capacity);
+            std::unique_ptr<T[]> newData(new T[other.capacity]);
             for (int i = 0; i < other.size; i++) {
                 newData[i] = other.data[i];
             }
