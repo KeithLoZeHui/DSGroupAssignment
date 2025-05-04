@@ -143,7 +143,7 @@ int cleanReviews(Review *&reviews, int &size) {
     inFile.close();
     outFile.close();
 
-    cout << "Cleaned reviews saved to data/reviewsClean.csv\n";
+    cout << "Cleaned reviews saved as reviewsClean.csv\n";
 
     size = validReviews.getCount();
     validReviews.toArray(reviews);
