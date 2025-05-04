@@ -9,18 +9,49 @@
 
 using namespace std;
 
-#define MAX_TRANSACTIONS 5000
-#define MAX_REVIEWS 1000
-#define MAX_WORDS 5000
-
-Transaction transactions[MAX_TRANSACTIONS];
+// Dynamic array setup
+Transaction* transactions = nullptr;
 int transactionCount = 0;
+int transactionCapacity = 100;
 
-Review reviews[MAX_REVIEWS];
+Review* reviews = nullptr;
 int reviewCount = 0;
+int reviewCapacity = 100;
 
-WordFreq wordList[MAX_WORDS];
+WordFreq* wordList = nullptr;
 int wordCount = 0;
+int wordCapacity = 100;
+
+// Helper function to resize Transaction array
+void ensureTransactionCapacity() {
+    if (transactionCount >= transactionCapacity) {
+        transactionCapacity *= 2;
+        Transaction* newArr = new Transaction[transactionCapacity];
+        for (int i = 0; i < transactionCount; ++i) newArr[i] = transactions[i];
+        delete[] transactions;
+        transactions = newArr;
+    }
+}
+// Helper function to resize Review array
+void ensureReviewCapacity() {
+    if (reviewCount >= reviewCapacity) {
+        reviewCapacity *= 2;
+        Review* newArr = new Review[reviewCapacity];
+        for (int i = 0; i < reviewCount; ++i) newArr[i] = reviews[i];
+        delete[] reviews;
+        reviews = newArr;
+    }
+}
+// Helper function to resize WordFreq array
+void ensureWordCapacity() {
+    if (wordCount >= wordCapacity) {
+        wordCapacity *= 2;
+        WordFreq* newArr = new WordFreq[wordCapacity];
+        for (int i = 0; i < wordCount; ++i) newArr[i] = wordList[i];
+        delete[] wordList;
+        wordList = newArr;
+    }
+}
 
 // Function to clean word: remove punctuation, lowercase
 MyString cleanWord(const MyString &word) {
@@ -86,6 +117,7 @@ void addWord(const MyString &w) {
             return;
         }
     }
+    ensureWordCapacity();
     wordList[wordCount++] = WordFreq(w, 1);
 }
 
@@ -121,23 +153,40 @@ void processReviewText(const MyString& text) {
     }
 }
 
-void sortWordsByFrequency() {
-    for (int i = 1; i < wordCount; ++i) {
-        WordFreq key = wordList[i];
-        int j = i - 1;
-        while (j >= 0 && wordList[j].count < key.count) {
-            wordList[j + 1] = wordList[j];
-            --j;
+// Quick sort implementation for WordFreq array based on frequency count (descending order)
+int partitionWordFreq(WordFreq arr[], int low, int high) {
+    WordFreq pivot = arr[high];
+    int i = (low - 1);
+    
+    for (int j = low; j <= high - 1; j++) {
+        // Sort in descending order of count
+        if (arr[j].count >= pivot.count) {
+            i++;
+            swap(arr[i], arr[j]);
         }
-        wordList[j + 1] = key;
     }
+    swap(arr[i + 1], arr[high]);
+    return (i + 1);
+}
+
+void quickSortWordFreq(WordFreq arr[], int low, int high) {
+    if (low < high) {
+        int pi = partitionWordFreq(arr, low, high);
+        quickSortWordFreq(arr, low, pi - 1);
+        quickSortWordFreq(arr, pi + 1, high);
+    }
+}
+
+void sortWordsByFrequency() {
+    // Use quick sort for O(n log n) performance
+    quickSortWordFreq(wordList, 0, wordCount - 1);
 }
 
 void loadTransactions(const std::string &filename) {
     std::ifstream file(filename);
     std::string line;
     getline(file, line); // Skip header
-    while (getline(file, line) && transactionCount < MAX_TRANSACTIONS) {
+    while (getline(file, line)) {
         std::stringstream ss(line);
         std::string customer, product, category, price, date, payment;
         
@@ -159,6 +208,7 @@ void loadTransactions(const std::string &filename) {
             category = category.substr(category.find_first_not_of(" \t"));
             payment = payment.substr(payment.find_first_not_of(" \t"));
             
+            ensureTransactionCapacity();
             transactions[transactionCount++] = Transaction(
                 MyString(customer.c_str()), 
                 MyString(product.c_str()), 
@@ -176,13 +226,14 @@ void loadReviews(const std::string &filename) {
     std::ifstream file(filename);
     std::string line;
     getline(file, line); // Skip header
-    while (getline(file, line) && reviewCount < MAX_REVIEWS) {
+    while (getline(file, line)) {
         std::stringstream ss(line);
         std::string pid, cid, rating, text;
         getline(ss, pid, ',');
         getline(ss, cid, ',');
         getline(ss, rating, ',');
         getline(ss, text, '\n');
+        ensureReviewCapacity();
         reviews[reviewCount++] = Review(
             MyString(pid.c_str()), 
             MyString(cid.c_str()), 
@@ -194,6 +245,10 @@ void loadReviews(const std::string &filename) {
 }
 
 int main() {
+    transactions = new Transaction[transactionCapacity];
+    reviews = new Review[reviewCapacity];
+    wordList = new WordFreq[wordCapacity];
+
     loadTransactions("transactionsClean.csv");
     loadReviews("reviewsClean.csv");
 
@@ -223,26 +278,89 @@ int main() {
             }
         }
     }
-    double percent = electronicsTotal ? (electronicsCC * 100.0 / electronicsTotal) : 0;
-    cout << "\nQ2: Electronics Analysis:\n";
+    cout << "\nQ2: Electronics purchases with Credit Card\n";
     cout << "Total Electronics purchases: " << electronicsTotal << endl;
     cout << "Electronics purchases with Credit Card: " << electronicsCC << endl;
-    cout << "Percentage: " << percent << "%\n";
+    if (electronicsTotal > 0) {
+        double percent = (double)electronicsCC / electronicsTotal * 100.0;
+        cout << "Percentage: " << percent << "%" << endl;
+    } else {
+        cout << "No Electronics purchases found.\n";
+    }
 
-    // Q3: Word frequency in 1-star reviews
+    cout << "\n3. Word Frequency Analysis Performance:\n";
+    auto start_q3 = std::chrono::high_resolution_clock::now();
+    
+    // Clear word list first to ensure we're only counting words from 1-star reviews
+    wordCount = 0;
+    // Process all 1-star reviews
     for (int i = 0; i < reviewCount; ++i) {
         if (reviews[i].rating == 1) {
             processReviewText(reviews[i].reviewText);
         }
     }
-
+    
+    // Sort words by frequency using quick sort O(n log n)
     sortWordsByFrequency();
-    cout << "\nQ3: Top words in 1-star reviews:\n";
-    for (int i = 0; i < min(wordCount, 5); ++i) {
-        cout << wordList[i].word << " - " << wordList[i].count << endl;
+    
+    // Display the top 10 most frequent words
+    cout << "--- First 10 Words Frequency ---\n";
+    int displayCount = (wordCount < 10) ? wordCount : 10;
+    for (int i = 0; i < displayCount; ++i) {
+        cout << wordList[i].word << ": " << wordList[i].count << " occurrences" << endl;
     }
+
+    // Sort wordList alphabetically by word for binary search
+    auto compareWords = [](const WordFreq& a, const WordFreq& b) {
+        return a.word < b.word;
+    };
+    // Simple insertion sort for alphabetic order (since STL is not allowed)
+    for (int i = 1; i < wordCount; ++i) {
+        WordFreq key = wordList[i];
+        int j = i - 1;
+        while (j >= 0 && wordList[j].word > key.word) {
+            wordList[j + 1] = wordList[j];
+            --j;
+        }
+        wordList[j + 1] = key;
+    }
+
+    // Prompt user for a word to search
+    cout << "\nEnter a word to search for its frequency in 1-star reviews: ";
+    std::string searchInput;
+    getline(cin, searchInput);
+    // Convert input to lowercase using cleanWord
+    MyString searchWord(searchInput.c_str());
+    MyString cleanedSearch = cleanWord(searchWord);
+
+    // Binary search for the word
+    int left = 0, right = wordCount - 1, foundIdx = -1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (wordList[mid].word == cleanedSearch) {
+            foundIdx = mid;
+            break;
+        } else if (wordList[mid].word < cleanedSearch) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    if (foundIdx != -1) {
+        cout << "'" << wordList[foundIdx].word << "' found with frequency: " << wordList[foundIdx].count << endl;
+    } else {
+        cout << "'" << searchInput << "' not found in 1-star reviews." << endl;
+    }
+    
+    auto end_q3 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration_q3 = end_q3 - start_q3;
+    cout << "Time taken for word frequency analysis: " << duration_q3.count() << " seconds\n";
 
     cout << "\nPress Enter to exit..."; 
     cin.get();
+
+    delete[] transactions;
+    delete[] reviews;
+    delete[] wordList;
     return 0;
 }
