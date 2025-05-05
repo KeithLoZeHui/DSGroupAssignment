@@ -66,6 +66,37 @@ public:
 
     LinkedList() : head(nullptr), size(0) {}
     
+    // Deep copy constructor
+    LinkedList(const LinkedList& other) : head(nullptr), size(0) {
+        Node<T>* current = other.head;
+        while (current != nullptr) {
+            insert(current->data);
+            current = current->next;
+        }
+    }
+
+    // Deep copy assignment operator
+    LinkedList& operator=(const LinkedList& other) {
+        if (this != &other) {
+            // Clean up current list
+            Node<T>* current = head;
+            while (current != nullptr) {
+                Node<T>* next = current->next;
+                delete current;
+                current = next;
+            }
+            head = nullptr;
+            size = 0;
+            // Copy from other
+            current = other.head;
+            while (current != nullptr) {
+                insert(current->data);
+                current = current->next;
+            }
+        }
+        return *this;
+    }
+
     ~LinkedList() {
         Node<T>* current = head;
         while (current != nullptr) {
